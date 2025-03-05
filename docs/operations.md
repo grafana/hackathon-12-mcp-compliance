@@ -114,6 +114,10 @@ The codebase is organized as follows:
   - `models.go`: Defines data structures for FedRAMP controls and evidence
   - `service.go`: Provides services for working with controls and evidence
 - `data/FedRAMP_rev5_HIGH-baseline_profile.yaml`: Contains the FedRAMP High baseline profile
+- `test/`:
+  - `client.go`: A test client for interacting with the server
+  - `client_test.go`: Automated tests for the server
+  - `run_tests.sh`: Script to run the tests
 
 ## Handler Implementation
 
@@ -144,13 +148,50 @@ The service layer uses a singleton pattern to ensure the FedRAMP profile is load
 
 ## Testing the Server
 
-To test the server, you can:
+The project includes a test client and automated tests to verify the server's functionality.
 
-1. Start the server with `./fedramp-compliance-assistant`
-2. Use a test client to send MCP requests to the server
-3. Verify that the server responds correctly to each request
+### Test Client
 
-A test client can be implemented using the `mcp-go` library's client functionality, or by manually constructing JSON-RPC requests and sending them to the server's standard input.
+The test client (`test/client.go`) is a simple program that:
+
+1. Starts the server as a subprocess
+2. Sends requests to the server via stdin/stdout
+3. Displays the responses
+
+It tests the following functionality:
+- Initializing the connection
+- Listing available tools
+- Calling each tool with sample parameters
+- Displaying the results
+
+### Automated Tests
+
+The automated tests (`test/client_test.go`) use Go's testing framework to verify the server's functionality. They test:
+
+- Server initialization
+- Tool discovery
+- Each tool's functionality with sample parameters
+- Error handling
+
+### Running the Tests
+
+To run the tests:
+
+1. Build the server:
+   ```bash
+   go build -o fedramp-compliance-assistant cmd/server/main.go
+   ```
+
+2. Run the tests:
+   ```bash
+   cd test
+   ./run_tests.sh
+   ```
+
+This will:
+- Build the server if it doesn't exist
+- Run the automated tests
+- Run the test client
 
 ## Extending the Server
 

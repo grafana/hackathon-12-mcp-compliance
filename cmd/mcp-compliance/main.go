@@ -8,6 +8,7 @@ import (
 
 	"github.com/grafana/mcp-compliance/internal/controls"
 	"github.com/grafana/mcp-compliance/internal/evidence"
+	"github.com/grafana/mcp-compliance/internal/programs"
 	"github.com/mark3labs/mcp-go/server"
 )
 
@@ -18,9 +19,12 @@ func main() {
 		"1.0.0",
 	)
 
+	// Create program registry
+	programRegistry := programs.NewRegistry()
+
 	// Register resources and tools
-	registerResources(s)
-	registerTools(s)
+	registerResources(s, programRegistry)
+	registerTools(s, programRegistry)
 
 	// Setup signal handling for graceful shutdown
 	sigCh := make(chan os.Signal, 1)
@@ -39,12 +43,15 @@ func main() {
 	}
 }
 
-func registerResources(s *server.MCPServer) {
+func registerResources(s *server.MCPServer, registry *programs.Registry) {
 	// Register control information resources
 	controls.RegisterResources(s)
 }
 
-func registerTools(s *server.MCPServer) {
+func registerTools(s *server.MCPServer, registry *programs.Registry) {
+	// Register control information tools
+	controls.RegisterControlTools(s, registry)
+
 	// Register evidence collection tools
-	evidence.RegisterTools(s)
+	evidence.RegisterTools(s, registry)
 }

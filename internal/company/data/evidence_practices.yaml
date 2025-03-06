@@ -1,0 +1,48 @@
+# Company-specific evidence collection practices
+# This file contains information about how the company collects evidence for FedRAMP controls
+
+AC-1:
+  practice: "At our company, we collect evidence for AC-1 by maintaining our access control policy in Confluence and documenting reviews in JIRA. The policy is reviewed annually by the security team and approved by the CISO."
+  responsible_team: "Security Operations"
+  artifacts:
+    - "Confluence page: Security/Policies/Access-Control"
+    - "JIRA project: SEC-POL-REVIEW"
+    - "Meeting minutes from annual review"
+    - "Signed approval document from CISO"
+  review_frequency: "Annual"
+  notes: "Ensure that all stakeholders are included in the review process and that comments are addressed before final approval."
+
+AC-2:
+  practice: "For account management (AC-2), we maintain a centralized identity management system and document all account creation, modification, and termination processes. We perform quarterly account reviews and maintain logs of all account activities."
+  responsible_team: "Identity and Access Management"
+  artifacts:
+    - "Account management procedures document in Confluence"
+    - "Screenshots of account management interfaces"
+    - "Quarterly account review reports"
+    - "Account creation/termination request forms"
+    - "Audit logs from identity management system"
+  review_frequency: "Quarterly"
+  notes: "Pay special attention to privileged accounts and ensure that all account terminations are processed within 24 hours of employee departure."
+
+AU-1:
+  practice: "For audit policy (AU-1), we maintain our audit and accountability policy in our document management system. The policy is reviewed annually and updated as needed based on changes in regulatory requirements or organizational needs."
+  responsible_team: "Security Compliance"
+  artifacts:
+    - "Audit and accountability policy document"
+    - "Annual review documentation"
+    - "Change history log"
+    - "Distribution list for policy updates"
+  review_frequency: "Annual"
+  notes: "Ensure that the policy addresses all required audit events and retention periods."
+
+IA-2:
+  practice: "For organizational user authentication (IA-2), we implement multi-factor authentication for all access to our systems. We document the MFA implementation, configuration, and user enrollment process."
+  responsible_team: "Identity and Access Management"
+  artifacts:
+    - "MFA configuration documentation"
+    - "Screenshots of MFA settings"
+    - "User enrollment procedures"
+    - "MFA exception requests and approvals"
+    - "Periodic testing results of MFA effectiveness"
+  review_frequency: "Semi-annual"
+  notes: "Any exceptions to MFA requirements must be documented and approved by the CISO, with compensating controls implemented and documented." 

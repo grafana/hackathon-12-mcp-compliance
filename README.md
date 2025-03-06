@@ -1,11 +1,22 @@
 # FedRAMP Compliance MCP Server
 
-An MCP (Model Context Protocol) server that provides information about FedRAMP High security controls and guidance on collecting evidence for those controls.
+An MCP (Model Context Protocol) server that provides information about FedRAMP security controls and guidance on collecting evidence for those controls.
+
+## The Compliance Journey
+
+The FedRAMP Compliance MCP Server is designed to support users throughout their compliance journey, which consists of three main phases:
+
+1. **Understanding** - Learning about security controls, their requirements, and how they apply to your system
+2. **Implementing** - Designing and implementing controls in your system to meet compliance requirements
+3. **Evidencing** - Collecting and documenting evidence to demonstrate compliance with controls
+
+![Compliance Journey](docs/images/compliance-journey.png)
 
 ## Features
 
-- Provides up-to-date information about FedRAMP High security controls
-- Offers guidance on how to collect evidence for security controls
+- Provides up-to-date information about FedRAMP security controls
+- Offers guidance on how to implement controls in your system
+- Provides both general and company-specific evidence collection guidance
 - Supports searching for controls and evidence guidance
 - Implements the Model Context Protocol for seamless integration with LLM applications
 
@@ -33,20 +44,65 @@ An MCP (Model Context Protocol) server that provides information about FedRAMP H
    make run
    ```
 
+### Local Deployment (macOS)
+
+To deploy the server locally on macOS:
+
+```
+make deploy-local
+```
+
+This will build the macOS version of the server and copy it to `~/.mcp-compliance/bin/`.
+
 ## Usage
 
 The server implements the Model Context Protocol and can be used with any MCP client. It exposes the following resources and tools:
 
 ### Resources
 
-- `fedramp://controls/families` - List of all FedRAMP security control families
-- `fedramp://controls/{id}` - Information about a specific FedRAMP security control
-- `fedramp://controls/search/{query}` - Search for FedRAMP security controls by keyword
+- `compliance://programs` - List of all available compliance programs
+- `compliance://{program}/families` - List of all control families for a compliance program
+- `compliance://{program}/controls/{id}` - Information about a specific security control
+- `compliance://{program}/search/{query}` - Search for security controls by keyword
 
 ### Tools
 
-- `get_evidence_guidance` - Get guidance on collecting evidence for a specific FedRAMP security control
+#### Understanding Controls
+
+- `get_control_info` - Get detailed information about a specific security control
+- `get_control_family` - Get information about a control family/group
+
+#### Evidencing Controls
+
+- `get_evidence_guidance` - Get general guidance on collecting evidence for a control
 - `search_evidence_guidance` - Search for evidence guidance by keyword
+- `get_company_evidence_practice` - Get company-specific evidence collection practices for a control
+- `search_company_evidence_practices` - Search for company-specific evidence collection practices by keyword
+
+## Customizing Company-Specific Evidence Practices
+
+The server supports company-specific evidence collection practices through a YAML configuration file. This file can be placed in one of the following locations:
+
+- `./evidence_practices.yaml`
+- `./data/evidence_practices.yaml`
+- `~/.mcp-compliance/evidence_practices.yaml`
+
+The file should follow this format:
+
+```yaml
+AC-1:
+  practice: "Description of how your company collects evidence for AC-1"
+  responsible_team: "Team responsible for this control"
+  artifacts:
+    - "List of artifacts to collect"
+    - "Another artifact"
+  review_frequency: "How often to review"
+  notes: "Additional notes"
+
+AC-2:
+  practice: "Description of how your company collects evidence for AC-2"
+  # ...
+```
 
 ## Example Client Usage
 
@@ -101,25 +157,8 @@ func main() {
 
 	// Get information about a specific control
 	fmt.Println("Getting information about AC-1...")
-	readRequest := mcp.ReadResourceRequest{}
-	readRequest.Params.URI = "fedramp://controls/AC-1"
-
-	resource, err := c.ReadResource(ctx, readRequest)
-	if err != nil {
-		log.Fatalf("Failed to read resource: %v", err)
-	}
-
-	for _, content := range resource.Contents {
-		if textContent, ok := content.(mcp.TextContent); ok {
-			fmt.Println(textContent.Text)
-		}
-	}
-	fmt.Println()
-
-	// Get evidence guidance for a control
-	fmt.Println("Getting evidence guidance for AC-1...")
 	toolRequest := mcp.CallToolRequest{}
-	toolRequest.Params.Name = "get_evidence_guidance"
+	toolRequest.Params.Name = "get_control_info"
 	toolRequest.Params.Arguments = map[string]interface{}{
 		"controlId": "AC-1",
 	}

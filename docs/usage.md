@@ -167,6 +167,38 @@ Example:
 ]
 ```
 
+### Compare Control Requirements
+
+Tool: `compare_control`
+
+Parameters:
+- `controlId` (required): The ID of the security control (e.g., AC-1, IA-2)
+- `programs` (required): List of programs to compare (e.g., ['FedRAMP High', 'FedRAMP Moderate'])
+
+Compares control requirements across different compliance programs.
+
+Example:
+```json
+{
+  "controlId": "AC-1",
+  "programs": ["FedRAMP High", "FedRAMP Moderate"],
+  "comparison": {
+    "FedRAMP High": {
+      "requirements": [
+        "Requires formal, documented policies and procedures for access control that address purpose, scope, roles, responsibilities, management commitment, coordination, and compliance."
+      ],
+      "details": "High"
+    },
+    "FedRAMP Moderate": {
+      "requirements": [
+        "Requires formal, documented policies and procedures for access control that address purpose, scope, roles, responsibilities, management commitment, coordination, and compliance."
+      ],
+      "details": "Moderate"
+    }
+  }
+}
+```
+
 ## Using with an MCP Client
 
 To use the server with an MCP client, you need to:
@@ -177,3 +209,31 @@ To use the server with an MCP client, you need to:
 4. Call resources and tools as needed
 
 See the example client in the `examples` directory for a complete example of how to use the server with an MCP client. 
+
+What is the Access Control (AC) family in FedRAMP? What controls does it include? 
+
+What FedRAMP controls are related to authentication? 
+
+What compliance programs are available in the MCP server? Can you give me an overview of FedRAMP High? 
+
+How should I implement AC-2 (Account Management) in my cloud application? 
+
+I'm building a web application that uses OAuth for authentication. How should I implement IA-2 (Identification and Authentication)? 
+
+What's the best way to implement the audit controls (AU family) together in a cohesive way? 
+
+What evidence should I collect to demonstrate compliance with AC-1? 
+
+How does our company collect evidence for AC-2? 
+
+What evidence do we need to collect for the Identification and Authentication controls? 
+
+What controls require quarterly reviews according to our company practices? 
+
+I'm starting a new cloud project that will need FedRAMP High compliance. What controls should I focus on first, and how should I approach implementation and evidence collection? 
+
+I have implemented basic authentication with username and password. What additional controls do I need to implement to meet FedRAMP High requirements for identification and authentication? 
+
+We have an upcoming FedRAMP audit. What are the most common pitfalls when collecting evidence for the Access Control family, and how can we avoid them? 
+
+How does AC-2 (Account Management) relate to other controls in the FedRAMP framework? Are there dependencies I should be aware of? 

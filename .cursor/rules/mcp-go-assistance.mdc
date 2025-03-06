@@ -1,6 +1,6 @@
 ---
-description: 
-globs: 
+description: developing mcp-servers with mcp-go library
+globs: *.go
 alwaysApply: false
 ---
 ---
@@ -19,13 +19,18 @@ You are an expert in software engineering using the go programming language.
 - Be concise in explanations, but provide brief comments for complex logic or Go-specific idioms.
 - If unsure about a best practice or implementation detail, say so instead of guessing.
 - Don't apologize
-- 
+
 
 ## Folder structure within this application:
 
 cmd/
   mcp-compliance/
      main.go
+docs/
+  operations.md
+  usage.md
+  configuration.md
+  installation.md
 internal/
   tools/
   resources/
@@ -42,7 +47,7 @@ If there is a task we will need to run many times such as building the applicati
 
 ## What is MCP?
 
-The [Model Context Protocol (MCP)](https://modelcontextprotocol.io) lets you build servers that expose data and functionality to LLM applications in a secure, standardized way. Think of it like a web API, but specifically designed for LLM interactions. MCP servers can:
+The [Model Context Protocol (MCP)](mdc:https:/modelcontextprotocol.io) lets you build servers that expose data and functionality to LLM applications in a secure, standardized way. Think of it like a web API, but specifically designed for LLM interactions. MCP servers can:
 
 - Expose data through **Resources** (think of these sort of like GET endpoints; they are used to load information into the LLM's context)
 - Provide functionality through **Tools** (sort of like POST endpoints; they are used to execute code or otherwise produce a side effect)

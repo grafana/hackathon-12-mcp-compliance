@@ -1,0 +1,542 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: developing mcp-servers with mcp-go library
+---
+You are an expert in software engineering using the go programming language.
+
+## Use the following rules for working with Go:
+- Follow Go's idiomatic error handling
+- Use Go modules for dependency management
+- Always use the latest stable version of Go (1.24.1 or newer)
+- Follow the user's requirements carefully & to the letter.
+- First think step-by-step - describe your plan for structure, endpoints, and data flow in pseudocode, written out in great detail.
+- Confirm the plan, then write code!
+- Write correct, up-to-date, bug-free, fully functional, secure, and efficient Go code
+- Be concise in explanations, but provide brief comments for complex logic or Go-specific idioms.
+- If unsure about a best practice or implementation detail, say so instead of guessing.
+- Don't apologize
+- 
+
+## Folder structure within this application:
+
+cmd/
+  mcp-compliance/
+     main.go
+internal/
+  tools/
+  resources/
+  prompts/
+go.mod
+go.sum
+
+Additional rules:
+- If there are additional binaries to be built, create a new folder in cmd/ for each
+- If there are additional internal packages required, you may create new directories as needed in internal/
+
+## Housekeeping and Automation:
+If there is a task we will need to run many times such as building the application, processing input files, or creating deployment packages, create a Makefile and add them there.
+
+## What is MCP?
+
+The [Model Context Protocol (MCP)](https://modelcontextprotocol.io) lets you build servers that expose data and functionality to LLM applications in a secure, standardized way. Think of it like a web API, but specifically designed for LLM interactions. MCP servers can:
+
+- Expose data through **Resources** (think of these sort of like GET endpoints; they are used to load information into the LLM's context)
+- Provide functionality through **Tools** (sort of like POST endpoints; they are used to execute code or otherwise produce a side effect)
+- Define interaction patterns through **Prompts** (reusable templates for LLM interactions)
+- And more!
+
+
+## Core Concepts
+
+
+### Server
+
+<details>
+<summary>Show Server Examples</summary>
+
+The server is your core interface to the MCP protocol. It handles connection management, protocol compliance, and message routing:
+
+```go
+// Create a basic server
+s := server.NewMCPServer(
+    "My Server",  // Server name
+    "1.0.0",     // Version
+)
+
+// Start the server using stdio
+if err := server.ServeStdio(s); err != nil {
+    log.Fatalf("Server error: %v", err)
+}
+```
+
+</details>
+
+### Resources
+
+<details>
+<summary>Show Resource Examples</summary>
+Resources are how you expose data to LLMs. They can be anything - files, API responses, database queries, system information, etc. Resources can be:
+
+- Static (fixed URI)
+- Dynamic (using URI templates)
+
+Here's a simple example of a static resource:
+
+```go
+// Static resource example - exposing a README file
+resource := mcp.NewResource(
+    "docs://readme",
+    "Project README",
+    mcp.WithResourceDescription("The project's README file"), 
+    mcp.WithMIMEType("text/markdown"),
+)
+
+// Add resource with its handler
+s.AddResource(resource, func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+    content, err := os.ReadFile("README.md")
+    if err != nil {
+        return nil, err
+    }
+    
+    return []mcp.ResourceContents{
+        mcp.TextResourceContents{
+            URI:      "docs://readme",
+            MIMEType: "text/markdown",
+            Text:     string(content),
+        },
+    }, nil
+})
+```
+
+And here's an example of a dynamic resource using a template:
+
+```go
+// Dynamic resource example - user profiles by ID
+template := mcp.NewResourceTemplate(
+    "users://{id}/profile",
+    "User Profile",
+    mcp.WithTemplateDescription("Returns user profile information"),
+    mcp.WithTemplateMIMEType("application/json"),
+)
+
+// Add template with its handler
+s.AddResourceTemplate(template, func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+    // Extract ID from the URI using regex matching
+    // The server automatically matches URIs to templates
+    userID := extractIDFromURI(request.Params.URI)
+    
+    profile, err := getUserProfile(userID)  // Your DB/API call here
+    if err != nil {
+        return nil, err
+    }
+    
+    return []mcp.ResourceContents{
+        mcp.TextResourceContents{
+            URI:      request.Params.URI,
+            MIMEType: "application/json",
+            Text:     profile,
+        },
+    }, nil
+})
+```
+
+The examples are simple but demonstrate the core concepts. Resources can be much more sophisticated - serving multiple contents, integrating with databases or external APIs, etc.
+</details>
+
+### Tools
+
+<details>
+<summary>Show Tool Examples</summary>
+
+Tools let LLMs take actions through your server. Unlike resources, tools are expected to perform computation and have side effects. They're similar to POST endpoints in a REST API.
+
+Simple calculation example:
+```go
+calculatorTool := mcp.NewTool("calculate",
+    mcp.WithDescription("Perform basic arithmetic calculations"),
+    mcp.WithString("operation",
+        mcp.Required(),
+        mcp.Description("The arithmetic operation to perform"),
+        mcp.Enum("add", "subtract", "multiply", "divide"),
+    ),
+    mcp.WithNumber("x",
+        mcp.Required(),
+        mcp.Description("First number"),
+    ),
+    mcp.WithNumber("y",
+        mcp.Required(),
+        mcp.Description("Second number"),
+    ),
+)
+
+s.AddTool(calculatorTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+    op := request.Params.Arguments["operation"].(string)
+    x := request.Params.Arguments["x"].(float64)
+    y := request.Params.Arguments["y"].(float64)
+
+    var result float64
+    switch op {
+    case "add":
+        result = x + y
+    case "subtract":
+        result = x - y
+    case "multiply":
+        result = x * y
+    case "divide":
+        if y == 0 {
+            return mcp.NewToolResultError("Division by zero is not allowed"), nil
+        }
+        result = x / y
+    }
+    
+    return mcp.FormatNumberResult(result), nil
+})
+```
+
+HTTP request example:
+```go
+httpTool := mcp.NewTool("http_request",
+    mcp.WithDescription("Make HTTP requests to external APIs"),
+    mcp.WithString("method",
+        mcp.Required(),
+        mcp.Description("HTTP method to use"),
+        mcp.Enum("GET", "POST", "PUT", "DELETE"),
+    ),
+    mcp.WithString("url",
+        mcp.Required(),
+        mcp.Description("URL to send the request to"),
+        mcp.Pattern("^https?://.*"),
+    ),
+    mcp.WithString("body",
+        mcp.Description("Request body (for POST/PUT)"),
+    ),
+)
+
+s.AddTool(httpTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+    method := request.Params.Arguments["method"].(string)
+    url := request.Params.Arguments["url"].(string)
+    body := ""
+    if b, ok := request.Params.Arguments["body"].(string); ok {
+        body = b
+    }
+
+    // Create and send request
+    var req *http.Request
+    var err error
+    if body != "" {
+        req, err = http.NewRequest(method, url, strings.NewReader(body))
+    } else {
+        req, err = http.NewRequest(method, url, nil)
+    }
+    if err != nil {
+        return mcp.NewToolResultError(fmt.Sprintf("Failed to create request: %v", err)), nil
+    }
+
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        return mcp.NewToolResultError(fmt.Sprintf("Request failed: %v", err)), nil
+    }
+    defer resp.Body.Close()
+
+    // Return response
+    respBody, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return mcp.NewToolResultError(fmt.Sprintf("Failed to read response: %v", err)), nil
+    }
+
+    return mcp.NewToolResultText(fmt.Sprintf("Status: %d\nBody: %s", resp.StatusCode, string(respBody))), nil
+})
+```
+
+Tools can be used for any kind of computation or side effect:
+- Database queries
+- File operations  
+- External API calls
+- Calculations
+- System operations
+
+Each tool should:
+- Have a clear description
+- Validate inputs
+- Handle errors gracefully 
+- Return structured responses
+- Use appropriate result types
+
+</details>
+
+### Prompts
+
+<details>
+<summary>Show Prompt Examples</summary>
+
+Prompts are reusable templates that help LLMs interact with your server effectively. They're like "best practices" encoded into your server. Here are some examples:
+
+```go
+// Simple greeting prompt
+s.AddPrompt(mcp.NewPrompt("greeting",
+    mcp.WithPromptDescription("A friendly greeting prompt"),
+    mcp.WithArgument("name",
+        mcp.ArgumentDescription("Name of the person to greet"),
+    ),
+), func(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+    name := request.Params.Arguments["name"].(string)
+    if name == "" {
+        name = "friend"
+    }
+    
+    return mcp.NewGetPromptResult(
+        "A friendly greeting",
+        []mcp.PromptMessage{
+            mcp.NewPromptMessage(
+                mcp.RoleAssistant,
+                mcp.NewTextContent(fmt.Sprintf("Hello, %s! How can I help you today?", name)),
+            ),
+        },
+    ), nil
+})
+
+// Code review prompt with embedded resource
+s.AddPrompt(mcp.NewPrompt("code_review",
+    mcp.WithPromptDescription("Code review assistance"),
+    mcp.WithArgument("pr_number",
+        mcp.ArgumentDescription("Pull request number to review"),
+        mcp.RequiredArgument(),
+    ),
+), func(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+    prNumber := request.Params.Arguments["pr_number"].(string)
+    if prNumber == "" {
+        return nil, fmt.Errorf("pr_number is required")
+    }
+    
+    return mcp.NewGetPromptResult(
+        "Code review assistance",
+        []mcp.PromptMessage{
+            mcp.NewPromptMessage(
+                mcp.RoleSystem,
+                mcp.NewTextContent("You are a helpful code reviewer. Review the changes and provide constructive feedback."),
+            ),
+            mcp.NewPromptMessage(
+                mcp.RoleAssistant,
+                mcp.NewEmbeddedResource(mcp.ResourceContents{
+                    URI: fmt.Sprintf("git://pulls/%s/diff", prNumber),
+                    MIMEType: "text/x-diff",
+                }),
+            ),
+        },
+    ), nil
+})
+
+// Database query builder prompt
+s.AddPrompt(mcp.NewPrompt("query_builder",
+    mcp.WithPromptDescription("SQL query builder assistance"),
+    mcp.WithArgument("table",
+        mcp.ArgumentDescription("Name of the table to query"),
+        mcp.RequiredArgument(),
+    ),
+), func(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+    tableName := request.Params.Arguments["table"].(string)
+    if tableName == "" {
+        return nil, fmt.Errorf("table name is required")
+    }
+    
+    return mcp.NewGetPromptResult(
+        "SQL query builder assistance",
+        []mcp.PromptMessage{
+            mcp.NewPromptMessage(
+                mcp.RoleSystem,
+                mcp.NewTextContent("You are a SQL expert. Help construct efficient and safe queries."),
+            ),
+            mcp.NewPromptMessage(
+                mcp.RoleAssistant,
+                mcp.NewEmbeddedResource(mcp.ResourceContents{
+                    URI: fmt.Sprintf("db://schema/%s", tableName),
+                    MIMEType: "application/json",
+                }),
+            ),
+        },
+    ), nil
+})
+```
+
+Prompts can include:
+- System instructions
+- Required arguments
+- Embedded resources
+- Multiple messages
+- Different content types (text, images, etc.)
+- Custom URI schemes
+
+</details>
+
+## A working example for filesystem stdio client
+
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/mark3labs/mcp-go/client"
+	"github.com/mark3labs/mcp-go/mcp"
+)
+
+func main() {
+	c, err := client.NewStdioMCPClient(
+		"npx",
+		[]string{}, // Empty ENV
+		"-y",
+		"@modelcontextprotocol/server-filesystem",
+		"/tmp",
+	)
+	if err != nil {
+		log.Fatalf("Failed to create client: %v", err)
+	}
+	defer c.Close()
+
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Initialize the client
+	fmt.Println("Initializing client...")
+	initRequest := mcp.InitializeRequest{}
+	initRequest.Params.ProtocolVersion = mcp.LATEST_PROTOCOL_VERSION
+	initRequest.Params.ClientInfo = mcp.Implementation{
+		Name:    "example-client",
+		Version: "1.0.0",
+	}
+
+	initResult, err := c.Initialize(ctx, initRequest)
+	if err != nil {
+		log.Fatalf("Failed to initialize: %v", err)
+	}
+	fmt.Printf(
+		"Initialized with server: %s %s\n\n",
+		initResult.ServerInfo.Name,
+		initResult.ServerInfo.Version,
+	)
+
+	// List Tools
+	fmt.Println("Listing available tools...")
+	toolsRequest := mcp.ListToolsRequest{}
+	tools, err := c.ListTools(ctx, toolsRequest)
+	if err != nil {
+		log.Fatalf("Failed to list tools: %v", err)
+	}
+	for _, tool := range tools.Tools {
+		fmt.Printf("- %s: %s\n", tool.Name, tool.Description)
+	}
+	fmt.Println()
+
+	// List allowed directories
+	fmt.Println("Listing allowed directories...")
+	listDirRequest := mcp.CallToolRequest{
+		Request: mcp.Request{
+			Method: "tools/call",
+		},
+	}
+	listDirRequest.Params.Name = "list_allowed_directories"
+
+	result, err := c.CallTool(ctx, listDirRequest)
+	if err != nil {
+		log.Fatalf("Failed to list allowed directories: %v", err)
+	}
+	printToolResult(result)
+	fmt.Println()
+
+	// List /tmp
+	fmt.Println("Listing /tmp directory...")
+	listTmpRequest := mcp.CallToolRequest{}
+	listTmpRequest.Params.Name = "list_directory"
+	listTmpRequest.Params.Arguments = map[string]interface{}{
+		"path": "/tmp",
+	}
+
+	result, err = c.CallTool(ctx, listTmpRequest)
+	if err != nil {
+		log.Fatalf("Failed to list directory: %v", err)
+	}
+	printToolResult(result)
+	fmt.Println()
+
+	// Create mcp directory
+	fmt.Println("Creating /tmp/mcp directory...")
+	createDirRequest := mcp.CallToolRequest{}
+	createDirRequest.Params.Name = "create_directory"
+	createDirRequest.Params.Arguments = map[string]interface{}{
+		"path": "/tmp/mcp",
+	}
+
+	result, err = c.CallTool(ctx, createDirRequest)
+	if err != nil {
+		log.Fatalf("Failed to create directory: %v", err)
+	}
+	printToolResult(result)
+	fmt.Println()
+
+	// Create hello.txt
+	fmt.Println("Creating /tmp/mcp/hello.txt...")
+	writeFileRequest := mcp.CallToolRequest{}
+	writeFileRequest.Params.Name = "write_file"
+	writeFileRequest.Params.Arguments = map[string]interface{}{
+		"path":    "/tmp/mcp/hello.txt",
+		"content": "Hello World",
+	}
+
+	result, err = c.CallTool(ctx, writeFileRequest)
+	if err != nil {
+		log.Fatalf("Failed to create file: %v", err)
+	}
+	printToolResult(result)
+	fmt.Println()
+
+	// Verify file contents
+	fmt.Println("Reading /tmp/mcp/hello.txt...")
+	readFileRequest := mcp.CallToolRequest{}
+	readFileRequest.Params.Name = "read_file"
+	readFileRequest.Params.Arguments = map[string]interface{}{
+		"path": "/tmp/mcp/hello.txt",
+	}
+
+	result, err = c.CallTool(ctx, readFileRequest)
+	if err != nil {
+		log.Fatalf("Failed to read file: %v", err)
+	}
+	printToolResult(result)
+
+	// Get file info
+	fmt.Println("Getting info for /tmp/mcp/hello.txt...")
+	fileInfoRequest := mcp.CallToolRequest{}
+	fileInfoRequest.Params.Name = "get_file_info"
+	fileInfoRequest.Params.Arguments = map[string]interface{}{
+		"path": "/tmp/mcp/hello.txt",
+	}
+
+	result, err = c.CallTool(ctx, fileInfoRequest)
+	if err != nil {
+		log.Fatalf("Failed to get file info: %v", err)
+	}
+	printToolResult(result)
+}
+
+// Helper function to print tool results
+func printToolResult(result *mcp.CallToolResult) {
+	for _, content := range result.Content {
+		if textContent, ok := content.(mcp.TextContent); ok {
+			fmt.Println(textContent.Text)
+		} else {
+			jsonBytes, _ := json.MarshalIndent(content, "", "  ")
+			fmt.Println(string(jsonBytes))
+		}
+	}
+}
+```

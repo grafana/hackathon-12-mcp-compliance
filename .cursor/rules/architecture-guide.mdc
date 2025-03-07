@@ -1,0 +1,152 @@
+---
+description: MCP Compliance Project Architecture Guide
+globs: *.go
+alwaysApply: false
+---
+
+# MCP Compliance Architecture Pattern
+
+This project follows a hexagonal architecture with domain-driven design, command-handler pattern, and ports and adapters.
+
+## Directory Structure
+
+```
+.
+├── cmd/                    # Command-line tools and entrypoints
+│   └── fedramp_data/       # FedRAMP data processing CLI
+├── internal/               # Internal packages
+│   ├── adapters/           # Adapter implementations
+│   ├── domain/             # Domain models and commands
+│   │   └── fedramp/        # FedRAMP domain
+│   ├── ports/              # Port interfaces
+│   └── services/           # Service layer
+│       └── fedramp_data/   # FedRAMP data service
+│           └── fedramp_data_handlers/ # Specialized handlers
+```
+
+## Architectural Layers
+
+1. **Entrypoint Layer** (`cmd/`): CLI tools and application entrypoints
+2. **Domain Layer** (`internal/domain/`): Domain models and commands
+3. **Ports Layer** (`internal/ports/`): Interface contracts for external dependencies
+4. **Adapters Layer** (`internal/adapters/`): Implementations of port interfaces
+5. **Service Layer** (`internal/services/`): Orchestrates operations, validates input
+6. **Handler Layer** (`internal/services/*/[service]_handlers/`): Business logic
+
+## Package Naming Conventions
+
+- Each service has its own package: `fedramp_data`, `fedramp_compliance`, etc.
+- Handlers use service-specific package names: `fedramp_data_handlers`, `fedramp_compliance_handlers`
+- All files in the same directory share the same package name
+- Package names should be descriptive and avoid conflicts
+
+## Flow of Control
+
+1. Entrypoint (CLI/API) calls the appropriate service method
+2. Service validates input and creates a command object
+3. Service passes the command to the appropriate specialized handler
+4. Handler contains business logic and may use ports to interact with external systems
+5. Adapters implement ports and handle external interactions
+
+## Adding New Features
+
+### Adding a New Service
+
+1. Create a new directory in `internal/services/`
+2. Create a service file with the service name as the package
+3. Create a handlers directory with the service name + "_handlers" as the package
+4. Create specialized handlers for different operations
+5. Create an entrypoint in `cmd/` if needed
+
+### Adding a New Handler
+
+1. Identify the appropriate service
+2. Create a new handler file in the service's handlers directory
+3. Implement only the ports needed for that handler
+4. Update the service to use the new handler
+
+### Adding a New Port
+
+1. Create a new interface in `internal/ports/`
+2. Implement the port in `internal/adapters/`
+3. Update handlers to use the new port
+
+## Command-Handler Pattern
+
+The project uses the command-handler pattern for better separation of concerns:
+
+1. Commands are defined in the domain layer as structs with necessary parameters
+2. Services validate input and create command objects
+3. Services pass commands to appropriate specialized handlers
+4. Handlers contain the business logic to process commands and return results
+
+Benefits:
+- Clear separation between input validation and business logic
+- Improved testability through command objects
+- Better maintainability with single-responsibility components
+
+## Specialized Handlers
+
+The project uses specialized handlers for different types of operations:
+
+1. **FileHandler**: Handles file processing operations (requires file and OSCAL repositories)
+2. **SearchHandler**: Handles search-related operations (operates on in-memory data)
+3. **ControlHandler**: Handles control-related operations (operates on in-memory data)
+
+Benefits:
+- Each handler only receives the dependencies it needs
+- Improved modularity and testability
+- Smaller, more focused components with clear responsibilities
+
+## Ports and Adapters Pattern (Hexagonal Architecture)
+
+The project implements the ports and adapters pattern (also known as hexagonal architecture):
+
+1. **Ports**: Interfaces that define contracts for external dependencies (e.g., file system, OSCAL parsing)
+2. **Adapters**: Implementations of port interfaces that interact with external systems
+3. **Handlers**: Core business logic that depends on ports, not concrete implementations
+4. **Service**: Creates and configures adapters, then passes them to appropriate handlers
+
+Benefits:
+- Decoupling business logic from external dependencies
+- Improved testability through mock implementations of ports
+- Flexibility to change implementations without affecting business logic
+- Clear boundaries between the application core and external systems
+
+## Testing Strategy
+
+- Unit test handlers with mock implementations of ports
+- Test services with mock handlers
+- Integration tests should use real adapters with test data
+
+## MCP Server Implementation
+
+When implementing MCP servers:
+1. Define tools that correspond to service methods
+2. Create appropriate adapters for external dependencies
+3. Follow the same command-handler pattern for processing requests
+4. Ensure proper error handling and validation
+
+## Domain Models
+
+The domain models should be defined in the domain layer. For example, the FedRAMP domain includes:
+
+- **Program**: Top-level structure containing control families
+- **ControlFamily**: Group of related controls
+- **Control**: Individual compliance control with parameters, statements, etc.
+- **ControlParameter**: Parameters for a control
+- **ControlStatement**: Statements that define control requirements
+- **AssessmentObjective**: Objectives for assessing control implementation
+- **AssessmentMethod**: Methods for assessing control implementation
+
+## Commands
+
+Commands should be defined in the domain layer alongside the models they operate on. Examples:
+
+- **ProcessFileCommand**: Command to process a FedRAMP baseline file
+- **WriteOutputCommand**: Command to write a Program to a JSON file
+- **SearchControlsCommand**: Command to search for controls by keyword
+- **GetControlCommand**: Command to get a control by ID
+- **GetControlFamilyCommand**: Command to get a control family by ID
+- **ListControlFamiliesCommand**: Command to list all control families
+- **GetControlEvidenceGuidanceCommand**: Command to get evidence guidance for a control

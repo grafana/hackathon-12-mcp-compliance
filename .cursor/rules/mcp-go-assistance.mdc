@@ -21,26 +21,13 @@ You are an expert in software engineering using the go programming language.
 - Don't apologize
 
 
-## Folder structure within this application:
+## Design and Structure
+If you're not sure where something goes, ask me.  We're following Domain Driven Design and Hexagonal architecture
 
-cmd/
-  mcp-compliance/
-     main.go
-docs/
-  operations.md
-  usage.md
-  configuration.md
-  installation.md
-internal/
-  tools/
-  resources/
-  prompts/
-go.mod
-go.sum
 
 Additional rules:
 - If there are additional binaries to be built, create a new folder in cmd/ for each
-- If there are additional internal packages required, you may create new directories as needed in internal/
+- mcp-servers, cli tools and http servers are all examples of binaries to be built that would be in cmd/
 
 ## Housekeeping and Automation:
 If there is a task we will need to run many times such as building the application, processing input files, or creating deployment packages, create a Makefile and add them there.

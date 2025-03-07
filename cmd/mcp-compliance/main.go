@@ -2,56 +2,33 @@ package main
 
 import (
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
 
-	"github.com/grafana/mcp-compliance/internal/controls"
-	"github.com/grafana/mcp-compliance/internal/evidence"
-	"github.com/grafana/mcp-compliance/internal/programs"
+	"github.com/grafana/hackathon-12-mcp-compliance/internal/programs"
+	"github.com/grafana/hackathon-12-mcp-compliance/internal/registry"
+	internalserver "github.com/grafana/hackathon-12-mcp-compliance/internal/server"
 	"github.com/mark3labs/mcp-go/server"
 )
 
 func main() {
-	// Create a new MCP server
-	s := server.NewMCPServer(
-		"FedRAMP Compliance Server",
-		"1.0.0",
-	)
-
 	// Create program registry
-	programRegistry := programs.NewRegistry()
+	r := registry.New()
 
-	// Register resources and tools
-	registerResources(s, programRegistry)
-	registerTools(s, programRegistry)
+	// Create and register FedRAMP programs
+	high, err := programs.NewFedRAMPHigh()
+	if err != nil {
+		log.Fatalf("Failed to create FedRAMP High program: %v", err)
+	}
+	r.Register(high)
 
-	// Setup signal handling for graceful shutdown
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	moderate, err := programs.NewFedRAMPModerate()
+	if err != nil {
+		log.Fatalf("Failed to create FedRAMP Moderate program: %v", err)
+	}
+	r.Register(moderate)
 
-	go func() {
-		<-sigCh
-		log.Println("Shutting down server...")
-		os.Exit(0)
-	}()
-
-	// Start the server using stdio
-	log.Println("Starting FedRAMP Compliance Server...")
+	// Create and start MCP server
+	s := internalserver.NewServer(r)
 	if err := server.ServeStdio(s); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
-}
-
-func registerResources(s *server.MCPServer, registry *programs.Registry) {
-	// Register control information resources
-	controls.RegisterResources(s)
-}
-
-func registerTools(s *server.MCPServer, registry *programs.Registry) {
-	// Register control information tools
-	controls.RegisterControlTools(s, registry)
-
-	// Register evidence collection tools
-	evidence.RegisterTools(s, registry)
 }

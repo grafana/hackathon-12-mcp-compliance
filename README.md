@@ -30,8 +30,8 @@ The FedRAMP Compliance MCP Server is designed to support users throughout their 
 
 1. Clone the repository:
    ```
-   git clone https://github.com/grafana/mcp-compliance.git
-   cd mcp-compliance
+   git clone https://github.com/grafana/hackathon-12-mcp-compliance.git
+   cd hackathon-12-mcp-compliance
    ```
 
 2. Build the server:

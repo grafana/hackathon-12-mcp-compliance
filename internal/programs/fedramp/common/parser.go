@@ -5,7 +5,8 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/grafana/mcp-compliance/internal/programs"
+	"github.com/grafana/hackathon-12-mcp-compliance/internal/programs"
+	"github.com/grafana/hackathon-12-mcp-compliance/internal/registry"
 	"gopkg.in/yaml.v3"
 )
 
@@ -66,19 +67,11 @@ func ConvertToControlFamily(group struct {
 	Class    string        `yaml:"class"`
 	Title    string        `yaml:"title"`
 	Controls []NISTControl `yaml:"controls"`
-}) *programs.ControlFamily {
-	family := &programs.ControlFamily{
+}) *registry.Program {
+	family := &registry.Program{
 		ID:          group.ID,
 		Name:        group.Title,
 		Description: fmt.Sprintf("%s controls", group.Title),
-		Controls:    make([]*programs.Control, 0, len(group.Controls)),
-	}
-
-	for _, nistControl := range group.Controls {
-		control := ConvertToControl(nistControl)
-		if control != nil {
-			family.Controls = append(family.Controls, control)
-		}
 	}
 
 	return family

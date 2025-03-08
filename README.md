@@ -4,10 +4,20 @@ A project for compliance that provides CLI tools and an MCP server for agents to
 
 ## Overview
 
+The FedRAMP Compliance MCP Server is designed to support users throughout their compliance journey, which consists of three main phases:
+
+1. **Understanding** - Learning about security controls, their requirements, and how they apply to your system
+2. **Implementing** - Designing and implementing controls in your system to meet compliance requirements
+3. **Evidencing** - Collecting and documenting evidence to demonstrate compliance with controls
+
 This project provides tools for working with FedRAMP compliance data, including:
 
 1. CLI tools for processing and querying FedRAMP baseline data
 2. An MCP server that exposes compliance data to LLM agents
+
+## Roadmap
+
+This project is missing the automation of evidence collection.  There needs to be a way to securely store what may be sensitive data in a shared location that provides the proper ACLs and data protection.  This is intended to be added in a future hackathon or additional roadmap time.
 
 ## Easy Button Quick Start
 

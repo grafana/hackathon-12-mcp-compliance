@@ -9,6 +9,27 @@ This project provides tools for working with FedRAMP compliance data, including:
 1. CLI tools for processing and querying FedRAMP baseline data
 2. An MCP server that exposes compliance data to LLM agents
 
+## Easy Button Quick Start
+
+For the quickest setup:
+
+```bash
+# Create the directory for the MCP compliance binary
+mkdir -p ~/.mcp-compliance/bin
+
+# Add to your PATH (add this to your .bashrc or .zshrc for persistence)
+export PATH=$PATH:~/.mcp-compliance/bin
+
+# Clone the repository
+git clone https://github.com/grafana/hackathon-12-mcp-compliance.git
+cd hackathon-12-mcp-compliance
+
+# Build and deploy locally
+make deploy-local
+```
+
+Now you can configure your agent (Cursor or Claude Desktop) to use the MCP compliance server. See the [Getting Started Guide](docs/getting_started.md) for configuration details.
+
 ## Documentation
 
 - [Getting Started Guide](docs/getting_started.md) - Instructions for setting up and using the project

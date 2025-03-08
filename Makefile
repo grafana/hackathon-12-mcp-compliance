@@ -7,7 +7,7 @@ all: build
 build: build-fedramp-data build-test-compliance build-mcp-compliance
 
 # Build the fedramp-data tool
-build-fedramp-data:
+build-fedramp-data: ensure-resources
 	@echo "Building fedramp-data..."
 	@go build -o bin/fedramp-data ./cmd/fedramp_data
 
@@ -34,6 +34,15 @@ clean:
 	@echo "Cleaning build artifacts..."
 	@rm -rf bin/
 
+# Clean resources
+clean-resources:
+	@echo "Cleaning resources..."
+	@rm -rf internal/resources/data/
+
+# Clean all
+clean-all: clean clean-resources
+	@echo "Cleaned all artifacts"
+
 # Download FedRAMP baseline files
 download-fedramp-files: download-fedramp-high download-fedramp-moderate
 	@echo "All FedRAMP baseline files downloaded to data/ directory"
@@ -55,22 +64,26 @@ download-fedramp-moderate:
 	@echo "FedRAMP Moderate baseline downloaded to data/FedRAMP_rev5_MODERATE-baseline-resolved-profile_catalog.json"
 
 # Run the fedramp-data tool with FedRAMP High baseline
-run-fedramp-data-high: download-fedramp-high
+run-fedramp-data-high: download-fedramp-high build-fedramp-data
 	@echo "Processing FedRAMP High baseline..."
-	@mkdir -p data/processed
 	@bin/fedramp-data \
 		-input data/FedRAMP_rev5_HIGH-baseline-resolved-profile_catalog.json \
-		-output data/processed/fedramp-high.json \
+		-output data/fedramp-high.json \
 		-program "FedRAMP High"
+	@echo "Copying processed file to resources directory..."
+	@mkdir -p internal/resources/data
+	@cp data/fedramp-high.json internal/resources/data/
 
 # Run the fedramp-data tool with FedRAMP Moderate baseline
-run-fedramp-data-moderate: download-fedramp-moderate
+run-fedramp-data-moderate: download-fedramp-moderate build-fedramp-data
 	@echo "Processing FedRAMP Moderate baseline..."
-	@mkdir -p data/processed
 	@bin/fedramp-data \
 		-input data/FedRAMP_rev5_MODERATE-baseline-resolved-profile_catalog.json \
-		-output data/processed/fedramp-moderate.json \
+		-output data/fedramp-moderate.json \
 		-program "FedRAMP Moderate"
+	@echo "Copying processed file to resources directory..."
+	@mkdir -p internal/resources/data
+	@cp data/fedramp-moderate.json internal/resources/data/
 
 # Search for controls in the FedRAMP High baseline
 search-high: download-fedramp-high
@@ -106,6 +119,8 @@ help:
 	@echo "  build                - Build all binaries"
 	@echo "  build-fedramp-data   - Build the fedramp-data tool"
 	@echo "  clean                - Clean build artifacts"
+	@echo "  clean-resources      - Clean resources directory"
+	@echo "  clean-all            - Clean all artifacts"
 	@echo "  download-fedramp-files - Download all FedRAMP baseline files"
 	@echo "  download-fedramp-high - Download FedRAMP High baseline"
 	@echo "  download-fedramp-moderate - Download FedRAMP Moderate baseline"
@@ -116,4 +131,10 @@ help:
 	@echo "  run-test-compliance    - Run test-compliance"
 	@echo "  run-mcp-compliance     - Run mcp-compliance server"
 	@echo "  deploy-local           - Deploy mcp-compliance server locally"
-	@echo "  help                 - Show this help message" 
+	@echo "  help                 - Show this help message"
+
+# Ensure resources directory exists with placeholder
+ensure-resources:
+	@echo "Ensuring resources directory exists..."
+	@mkdir -p internal/resources/data
+	@echo '{}' > internal/resources/data/placeholder.json 

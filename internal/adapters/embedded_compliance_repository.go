@@ -1,16 +1,13 @@
 package adapters
 
 import (
-	"embed"
 	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/grafana/hackathon-12-mcp-compliance/internal/domain/fedramp"
+	"github.com/grafana/hackathon-12-mcp-compliance/internal/resources"
 )
-
-//go:embed data/fedramp-high.json data/fedramp-moderate.json
-var embeddedData embed.FS
 
 // EmbeddedComplianceRepository implements the ComplianceRepository interface using embedded data
 type EmbeddedComplianceRepository struct {
@@ -57,9 +54,12 @@ func (r *EmbeddedComplianceRepository) LoadProgram(programName string) (fedramp.
 	}
 
 	// Read the embedded file
-	data, err := embeddedData.ReadFile(filePath)
+	data, err := resources.Data.ReadFile(filePath)
 	if err != nil {
-		return fedramp.Program{}, fmt.Errorf("failed to read program data: %v", err)
+		// If the file doesn't exist in the embedded FS, it might not have been processed yet
+		// In this case, return a more helpful error message
+		return fedramp.Program{}, fmt.Errorf("program data file not found: %s (run 'make run-fedramp-data-%s' to generate it)",
+			filePath, strings.ToLower(strings.Split(programName, " ")[1]))
 	}
 
 	// Unmarshal the JSON data

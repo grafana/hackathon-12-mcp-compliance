@@ -2,7 +2,7 @@ module github.com/grafana/hackathon-12-mcp-compliance
 
 go 1.24
 
-toolchain go1.24.1
+toolchain go1.26.3
 
 require github.com/mark3labs/mcp-go v0.11.2
 
